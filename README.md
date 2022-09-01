@@ -22,6 +22,18 @@ performance. On average, our framework shows 19.6% performance improvement in co
 
 
 ---------
+## How to use? 
+DeepTLF follows the scikit-learn API: 
+
+```python
+from src import DeepTFL
+
+dtlf_model = DeepTFL(n_est=23, max_depth=3, drop=0.23, n_layers=4, task='class')
+dtlf_model.fit(X_train,y_train)
+
+dtlf_y_hat = dtlf_model.predict(X_test)
+```
+---------
 ## Citation
 If you use this codebase, please cite our work:
 
