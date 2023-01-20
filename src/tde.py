@@ -28,7 +28,7 @@ class TreeDrivenEncoder:
                         d[(tree_number,node_id)] = self.get_node_data(raw.split(':')[1])
     
         for i in sorted(d.keys()):
-            if d[i][1] is not 0:
+            if d[i][1] != 0:
                 self.all_conditions.append([d[i][0], d[i][1]])
 
     def transform(self, data):

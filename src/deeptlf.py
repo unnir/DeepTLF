@@ -3,6 +3,7 @@ from tqdm import tqdm
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.base import BaseEstimator
+from sklearn.metrics import roc_auc_score
 
 
 # load PyTorch
@@ -251,10 +252,11 @@ def pytorch_train_ann(X, y, input_size, hs1,  num_outs, drop, n_layers, task='cl
             loss.backward()
             optimizer.step()
             
-        test_loss = test_nn(model, 'cuda', test_loader, criterion, task )
+        test_loss, custom_metric = test_nn(model, 'cuda', test_loader, criterion, task )
         #print(test_loss)
 
         early_stopping(test_loss, model)
+        #early_stopping(-custom_metric, model)
         if early_stopping.early_stop:
             print("Early stopping")
             print('LOSS:', test_loss)
@@ -267,23 +269,34 @@ def test_nn(model, device, test_loader, criterion, task='class'):
     model.eval()
     test_loss = 0
     correct = 0
+    
+    all_outputs, all_targets = [], []
+    
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device).float(), target.to(device).long()
             output = model(data)
             if task == 'class':
                 test_loss += criterion(output, target).item()  # sum up batch loss
+                all_outputs.append(output[:,1].detach().cpu().numpy())
+
             else:
                 test_loss += criterion(output.reshape(-1), target.float().reshape(-1)).item()  # sum up batch loss
+                all_outputs.append(output.detach().cpu().numpy())
+
+            all_targets.append(target.detach().cpu().numpy()) 
 
     test_loss /= len(test_loader.dataset)
-    test_loss *= 100 
+    test_loss *= 100
+    
+    all_outputs, all_targets = np.array(all_outputs), np.array(all_targets)
+    
+    custom_metric = roc_auc_score(all_targets.reshape(-1,1), all_outputs.reshape(-1,1))
 
-    return test_loss
+    return test_loss, custom_metric 
 
 
-import numpy as np
-import torch
+
 
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
