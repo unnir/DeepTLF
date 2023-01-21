@@ -37,15 +37,15 @@ class DeepTFL(BaseEstimator):
         self.checkpoint_name = checkpoint_name
         self.batchsize = batchsize 
         
-    def fit(self, X, y):
+    def fit(self, X_train, y_train, X_val=None, y_val=None):
         '''
         fit method. 
         '''
      
-        train_data = xgb.DMatrix(X, y)
+        train_data = xgb.DMatrix(X_train, y_train)
         if self.task == 'class':
             gbdt_model = xgb.XGBClassifier
-            num_of_outputs  = len(set(y))
+            num_of_outputs  = len(set(y_train))
         else:
             gbdt_model = xgb.XGBRegressor
             num_of_outputs = 1
@@ -55,7 +55,7 @@ class DeepTFL(BaseEstimator):
                                     n_estimators=self.n_est,
                                     use_label_encoder=False,
                                           )
-        self.xgb_model.fit(X, y)
+        self.xgb_model.fit(X_train, y_train)
         
         # extract trees from GBDT algorithm
         trees = self.xgb_model.get_booster().get_dump(with_stats=False)
@@ -66,9 +66,14 @@ class DeepTFL(BaseEstimator):
         #print(trees)
         enc_X_train = self.TDE_encoder.transform(X)
         self.shape = enc_X_train.shape[1]
+        
+        
+        # Encode val dataset
+        if type(X_val) != type(None):
+            X_val = self.TDE_encoder.transform(X_val)
 
         self.debug: print("Shape of the encoded data", enc_X_train.shape)
-        self.nn_model = pytorch_train_ann(enc_X_train, y, self.shape, 
+        self.nn_model = pytorch_train_ann(enc_X_train, y, X_val, y_val, self.shape, 
                                           self.nn, num_of_outputs, 
                                           self.drop,  self.n_layers, self.task, self.batchsize, self.checkpoint_name)
         self.debug: print('Training is done')
@@ -91,7 +96,7 @@ class DeepTFL(BaseEstimator):
             return y_hat
 
         else:
-            print('here')
+            if self.debug: print('here')
             y_hat = pytorch_predict(self.nn_model, enc_X_test, self.task)
             return y_hat
     
@@ -184,17 +189,18 @@ class NeuralNet(nn.Module):
         return x
 
 
-def pytorch_train_ann(X, y, input_size, hs1,  num_outs, drop, n_layers, task='class', batchsize=1024, path_name='checkpoint.pt'):
+def pytorch_train_ann(X_train, y_train, X_test, y_test, input_size, hs1, num_outs, drop, n_layers, task='class', batchsize=1024, path_name='checkpoint.pt'):
     if task == 'class':
         criterion = nn.CrossEntropyLoss()
-        stratify = y
+        stratify = y_train
     else:
         criterion = nn.MSELoss()
         stratify = None
     
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05,
-                                                        #stratify=stratify
-                                                       )
+    if type(X_test) == type(None): 
+        X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.05,
+                                                                stratify=stratify
+                                                               )
 
     model = NeuralNet(input_size, hs1, n_layers, num_outs, drop)
     model.cuda()
@@ -204,7 +210,7 @@ def pytorch_train_ann(X, y, input_size, hs1,  num_outs, drop, n_layers, task='cl
 
     batch_size = batchsize
     
-    print(batch_size)
+    #print(batch_size)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                batch_size=batch_size,
@@ -234,8 +240,8 @@ def pytorch_train_ann(X, y, input_size, hs1,  num_outs, drop, n_layers, task='cl
     
     num_epochs = 10000
     #
-    #for epoch in tqdm(range(num_epochs), desc="Epochs: "):
-    for epoch in range(num_epochs):
+    for epoch in tqdm(range(num_epochs), desc="Epochs: "):
+    #for epoch in range(num_epochs):
         model.train()
         for i, (sample, labels) in enumerate(train_loader):
             # Forward pass
@@ -296,7 +302,8 @@ def test_nn(model, device, test_loader, criterion, task='class'):
     return test_loss, custom_metric 
 
 
-
+import numpy as np
+import torch
 
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
@@ -348,10 +355,3 @@ class EarlyStopping:
             self.trace_func(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model.state_dict(), self.path)
         self.val_loss_min = val_loss
-
-
-        
-
-
-
-
