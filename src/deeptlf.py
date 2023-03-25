@@ -3,7 +3,7 @@ from tqdm import tqdm
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.base import BaseEstimator
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, r2_score
 
 
 # load PyTorch
