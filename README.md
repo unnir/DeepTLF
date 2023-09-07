@@ -29,6 +29,7 @@ dtlf_y_hat = dtlf_model.predict(X_test)
 
 ## Citation
 To cite DeepTLF in your work:
+```bib
 @article{borisov2022deeptlf,
   title={DeepTLF: robust deep neural networks for heterogeneous tabular data},
   author={Borisov, Vadim and Broelemann, Klaus and Kasneci, Enkelejda and Kasneci, Gjergji},
@@ -37,3 +38,4 @@ To cite DeepTLF in your work:
   year={2022},
   publisher={Springer}
 }
+```
