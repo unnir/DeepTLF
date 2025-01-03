@@ -50,10 +50,27 @@ class TreeDrivenEncoder:
 
     def transform(self, X):
         X = np.array(X)
+        
+        # Validate input
+        if X.ndim != 2:
+            raise ValueError("Input X must be a 2-dimensional array")
+        if not self.all_conditions:
+            raise ValueError("TreeDrivenEncoder has not been fitted. Call fit() first.")
+            
+        # Get the maximum feature index used in conditions
+        max_feature_idx = max(condition["feature"] for condition in self.all_conditions)
+        if X.shape[1] <= max_feature_idx:
+            raise ValueError(f"Input X has {X.shape[1]} features, but the encoder requires at least {max_feature_idx + 1} features")
+            
         n_conditions = len(self.all_conditions)
         encoded_X = np.zeros((X.shape[0], n_conditions), dtype=int)
-        for i, condition in enumerate(self.all_conditions):
-            encoded_X[:, i] = (
-                X[:, condition["feature"]] < condition["threshold"]
-            ).astype(int)
+        
+        try:
+            for i, condition in enumerate(self.all_conditions):
+                encoded_X[:, i] = (
+                    X[:, condition["feature"]] < condition["threshold"]
+                ).astype(int)
+        except Exception as e:
+            raise RuntimeError(f"Error during transformation: {str(e)}")
+            
         return encoded_X

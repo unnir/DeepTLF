@@ -1,17 +1,23 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=45", "wheel", "setuptools-scm>=6.2"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "deeptlf"
-version = "0.2.0"
+version = "0.3.1"
 description = "Deep Tabular Learning Framework"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-    {name = "Vadim Borisov", email = "vadim.borisov@uni-tuebingen.de"}
+    {name = "Vadim Borisov", email = "vadim@tabularis.ai"}
 ]
+maintainers = [
+    {name = "Vadim Borisov", email = "vadim@tabularis.ai"}
+]
+requires-python = ">=3.7"
+keywords = ["deep-learning", "tabular-data", "machine-learning", "neural-networks"]
 classifiers = [
+    "Development Status :: 4 - Beta",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
@@ -20,18 +26,34 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
-keywords = ["deep-learning", "tabular-data", "machine-learning", "neural-networks"]
 dependencies = [
-    "numpy",
-    "torch",
-    "scikit-learn",
-    "xgboost",
-    "tqdm"
+    "numpy>=1.19.0",
+    "torch>=1.7.0",
+    "scikit-learn>=0.24.0",
+    "xgboost>=1.3.0",
+    "tqdm>=4.50.0"
 ]
-requires-python = ">=3.7"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+examples = [
+    "jupyter>=1.0.0",
+    "matplotlib>=3.3.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/unnir/deeptlf"
+Documentation = "https://github.com/unnir/deeptlf#readme"
+Repository = "https://github.com/unnir/deeptlf.git"
+Issues = "https://github.com/unnir/deeptlf/issues"
 
-[tool.hatch.build]
+[tool.setuptools]
 packages = ["deeptlf"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=deeptlf --cov-report=term-missing"

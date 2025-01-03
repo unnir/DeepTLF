@@ -1,0 +1,14 @@
+.gitignore
+LICENSE
+README.md
+pipeline.png
+pyproject.toml
+deeptlf/__init__.py
+deeptlf/deeptlf.py
+deeptlf/tde.py
+deeptlf.egg-info/PKG-INFO
+deeptlf.egg-info/SOURCES.txt
+deeptlf.egg-info/dependency_links.txt
+deeptlf.egg-info/requires.txt
+deeptlf.egg-info/top_level.txt
+tests/test_deeptlf.py

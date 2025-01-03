@@ -1,0 +1,105 @@
+Metadata-Version: 2.1
+Name: deeptlf
+Version: 0.3.1
+Summary: Deep Tabular Learning Framework
+Author-email: Vadim Borisov <vadim@tabularis.ai>
+Maintainer-email: Vadim Borisov <vadim@tabularis.ai>
+License: MIT License
+        
+        Copyright (c) 2024 Vadim Borisov
+        
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+        
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+        
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+        
+Project-URL: Homepage, https://github.com/unnir/deeptlf
+Project-URL: Documentation, https://github.com/unnir/deeptlf#readme
+Project-URL: Repository, https://github.com/unnir/deeptlf.git
+Project-URL: Issues, https://github.com/unnir/deeptlf/issues
+Keywords: deep-learning,tabular-data,machine-learning,neural-networks
+Classifier: Development Status :: 4 - Beta
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy>=1.19.0
+Requires-Dist: torch>=1.7.0
+Requires-Dist: scikit-learn>=0.24.0
+Requires-Dist: xgboost>=1.3.0
+Requires-Dist: tqdm>=4.50.0
+Provides-Extra: test
+Requires-Dist: pytest>=7.0.0; extra == "test"
+Requires-Dist: pytest-cov>=4.0.0; extra == "test"
+Provides-Extra: examples
+Requires-Dist: jupyter>=1.0.0; extra == "examples"
+Requires-Dist: matplotlib>=3.3.0; extra == "examples"
+
+# DeepTLF: A Framework for Enhanced Deep Learning on Tabular Data
+
+![DeepTLF Pipeline](pipeline.png)
+
+## Overview
+
+**DeepTLF** significantly outperforms traditional Deep Neural Networks (DNNs) in handling tabular data. Using our novel TreeDrivenEncoder, we transform complex, heterogeneous data into a format highly compatible with DNNs. This enables a 19.6% average performance increase compared to conventional DNNs.
+
+## Installation
+
+You can install DeepTLF directly from PyPI:
+
+```bash
+pip install deeptlf
+```
+
+## Quick Start
+
+Seamlessly integrate DeepTLF into your workflow through its scikit-learn-compatible API:
+
+```python
+from deeptlf import DeepTFL
+
+# Initialize and train model
+dtlf_model = DeepTFL(n_est=23, max_depth=3, drop=0.23, n_layers=4, task='class')
+dtlf_model.fit(X_train, y_train)
+
+# Make predictions
+dtlf_y_hat = dtlf_model.predict(X_test)
+```
+
+## Features
+- Transforms heterogeneous data into DNN-friendly format
+- Supports multimodal learning
+- Adheres to the scikit-learn API for effortless integration
+- Features advanced options like custom layers, dropout rates, and more
+
+
+## Citation
+To cite DeepTLF in your work:
+```bib
+@article{borisov2022deeptlf,
+  title={DeepTLF: robust deep neural networks for heterogeneous tabular data},
+  author={Borisov, Vadim and Broelemann, Klaus and Kasneci, Enkelejda and Kasneci, Gjergji},
+  journal={International Journal of Data Science and Analytics},
+  pages={1--16},
+  year={2022},
+  publisher={Springer}
+}

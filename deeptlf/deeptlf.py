@@ -71,6 +71,30 @@ class DeepTFL(BaseEstimator):
         debug=False,
         checkpoint_name="checkpoint.pt",
     ):
+        # Validate input parameters
+        if not isinstance(n_est, int) or n_est <= 0:
+            raise ValueError("n_est must be a positive integer")
+        if not isinstance(max_depth, int) or max_depth <= 0:
+            raise ValueError("max_depth must be a positive integer")
+        if not isinstance(drop, (int, float)) or not 0 <= drop <= 1:
+            raise ValueError("drop must be a float between 0 and 1")
+        if not isinstance(xgb_lr, (int, float)) or xgb_lr <= 0:
+            raise ValueError("xgb_lr must be a positive float")
+        if not isinstance(batch_size, int) or batch_size <= 0:
+            raise ValueError("batch_size must be a positive integer")
+        if not isinstance(n_epoch, int) or n_epoch <= 0:
+            raise ValueError("n_epoch must be a positive integer")
+        if not isinstance(hidden_dim, int) or hidden_dim <= 0:
+            raise ValueError("hidden_dim must be a positive integer")
+        if not isinstance(n_layers, int) or n_layers <= 0:
+            raise ValueError("n_layers must be a positive integer")
+        if task not in ["class", "reg"]:
+            raise ValueError("task must be either 'class' or 'reg'")
+        if not isinstance(debug, bool):
+            raise ValueError("debug must be a boolean")
+        if not isinstance(checkpoint_name, str) or not checkpoint_name:
+            raise ValueError("checkpoint_name must be a non-empty string")
+
         self.n_est = n_est
         self.max_depth = max_depth
         self.n_epoch = n_epoch
@@ -89,6 +113,23 @@ class DeepTFL(BaseEstimator):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def fit(self, X_train, y_train, X_val=None, y_val=None):
+        # Validate inputs
+        if len(X_train) == 0 or len(y_train) == 0:
+            raise ValueError("Empty input data")
+        if len(X_train) != len(y_train):
+            raise ValueError("X_train and y_train must have the same length")
+        if np.any(np.isnan(X_train)) or np.any(np.isnan(y_train)):
+            raise ValueError("Input contains NaN values")
+        if X_val is not None and y_val is not None:
+            if len(X_val) != len(y_val):
+                raise ValueError("X_val and y_val must have the same length")
+            if np.any(np.isnan(X_val)) or np.any(np.isnan(y_val)):
+                raise ValueError("Validation data contains NaN values")
+
+        # Store target values for classification tasks
+        if self.task == "class":
+            self.last_y = y_train
+
         self.fit_xgb(X_train)
         trees = self.xgb_model.get_booster().get_dump(with_stats=False)
         self.TDE_encoder.fit(trees)
@@ -176,31 +217,64 @@ class DeepTFL(BaseEstimator):
                     print("Early stopping")
                     break  # Break out of the epoch loop
 
-    def predict(self, X, batch_size=32):
-        self.nn_model.load_state_dict(torch.load(self.checkpoint_name))
+    def predict(self, X):
+        # Validate input
+        if len(X) == 0:
+            raise ValueError("Empty input data")
+        if np.any(np.isnan(X)):
+            raise ValueError("Input contains NaN values")
+        
+        # Check if model exists and is initialized
+        if self.nn_model is None:
+            try:
+                self.nn_model = NeuralNet(
+                    self.input_shape,
+                    self.hidden_dim,
+                    self.n_layers,
+                    1 if self.task == "reg" else len(np.unique(self.last_y)),
+                    self.drop
+                ).to(self.device)
+            except AttributeError:
+                raise RuntimeError("Model not fitted. Call fit() before predict()")
+        
+        try:
+            self.nn_model.load_state_dict(torch.load(self.checkpoint_name))
+        except FileNotFoundError:
+            raise RuntimeError(f"Model checkpoint not found at {self.checkpoint_name}")
+        except Exception as e:
+            raise RuntimeError(f"Error loading model: {str(e)}")
+
+        self.nn_model.eval()  # Set model to evaluation mode
         n_samples = len(X)
-        n_batches = (
-            n_samples + self.batch_size - 1
-        ) // self.batch_size  # Ceiling division
+        n_batches = (n_samples + self.batch_size - 1) // self.batch_size  # Ceiling division
         y_hats = []
 
-        for i in range(n_batches):
-            start_idx = i * self.batch_size
-            end_idx = min((i + 1) * self.batch_size, n_samples)
+        with torch.no_grad():  # Disable gradient computation for prediction
+            for i in range(n_batches):
+                start_idx = i * self.batch_size
+                end_idx = min((i + 1) * self.batch_size, n_samples)
 
-            batch_X = X[start_idx:end_idx]
-            enc_X_batch = self.TDE_encoder.transform(batch_X)
+                batch_X = X[start_idx:end_idx]
+                enc_X_batch = self.TDE_encoder.transform(batch_X)
 
-            if self.task == "class":
-                y_hat = self.nn_model(torch.Tensor(enc_X_batch).to(self.device))
-                y_hat = torch.argmax(y_hat, dim=1).cpu().numpy()
-            else:
-                y_hat = self.nn_model(torch.Tensor(enc_X_batch).to(self.device))
-                y_hat = y_hat.detach().cpu().numpy()
+                try:
+                    if self.task == "class":
+                        y_hat = self.nn_model(torch.Tensor(enc_X_batch).to(self.device))
+                        y_hat = torch.argmax(y_hat, dim=1).cpu().numpy()
+                    else:
+                        y_hat = self.nn_model(torch.Tensor(enc_X_batch).to(self.device))
+                        y_hat = y_hat.detach().cpu().numpy()
+                except Exception as e:
+                    raise RuntimeError(f"Error during prediction: {str(e)}")
 
-            y_hats.append(y_hat)
+                y_hats.append(y_hat)
 
-        return np.concatenate(y_hats)
+        predictions = np.concatenate(y_hats)
+        # Ensure consistent output shapes
+        if self.task == "reg":
+            return predictions.reshape(-1, 1)  # Shape: (n_samples, 1)
+        else:
+            return predictions.reshape(-1)  # Shape: (n_samples,)
 
 
 class myDataset(Dataset):
